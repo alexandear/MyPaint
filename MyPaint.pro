@@ -16,10 +16,21 @@ CONFIG += C++11
 
 SOURCES += main.cpp \
     mainwindow.cpp \
-    instruments.cpp \
-    paintscene.cpp
+    paintscene.cpp \
+    datasingleton.cpp \
+    abstractinstrument.cpp \
+    pencilinstrument.cpp \
+    lineinstrument.cpp \
+    geometricshapesinstrument.cpp \
+    instrumentswidget.cpp
 
 HEADERS += \
     mainwindow.h \
-    instruments.h \
-    paintscene.h
+    paintscene.h \
+    datasingleton.h \
+    abstractinstrument.h \
+    pencilinstrument.h \
+    instrumentsenum.h \
+    lineinstrument.h \
+    geometricshapesinstrument.h \
+    instrumentswidget.h

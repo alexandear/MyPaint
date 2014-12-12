@@ -1,70 +1,87 @@
-#include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 
+#include "abstractinstrument.h"
+#include "pencilinstrument.h"
+#include "geometricshapesinstrument.h"
+#include "datasingleton.h"
 #include "paintscene.h"
 
+PaintScene::PaintScene(QWidget *parent)
+    : QGraphicsScene(parent), modified(false) {
 
-PaintScene::PaintScene(QWidget *parent) : QGraphicsScene(parent) {
+    DataSingleton::Instance().setInstrument(NONE_INSTRUMENT);
 
-    lastItem = nullptr;
-    setSceneRect(50, 50, 400, 400);
+    setSceneRect(-200, -200, 400, 400);
+    startSceneRect = sceneRect();
 
-    modified = false;
-    scribbling = false;
-    myPenWidth = 1;
-    myPenColor = Qt::blue;
-    myMode = Draw;
-}
-
-void PaintScene::setPenColor(const QColor &penColor) {
-    this->myPenColor = penColor;
-}
-
-void PaintScene::setPenWidth(int penWidth) {
-    this->myPenWidth = penWidth;
+    instruments.fill(nullptr, static_cast<int>(INSTRUMENTS_COUNT));
+    instruments[PEN] = new PencilInstrument(this);
+    instruments[LINE] = new GeometricShapesInstrument(this, GeometricShapesInstrument::Line);
+    instruments[RECTANGLE] = new GeometricShapesInstrument(this, GeometricShapesInstrument::Rectangle);
+    instruments[ELLIPSE] = new GeometricShapesInstrument(this, GeometricShapesInstrument::Ellipse);
 }
 
 void PaintScene::mousePressEvent(QGraphicsSceneMouseEvent *e) {
-    QGraphicsScene::mousePressEvent(e);
-    if (e->button() == Qt::LeftButton) {
-        lastPointF = e->scenePos();
+    InstrumentsEnum tool = DataSingleton::Instance().instrument();
+    if(tool != NONE_INSTRUMENT) {
+        instrument = instruments.at(tool);
+        instrument->mousePressEvent(e, *this);
+        modified = true;
     }
 }
 
 void PaintScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
     QGraphicsScene::mouseMoveEvent(e);
-    if ((e->buttons() & Qt::LeftButton)) {
-        if (lastItem && myMode != Draw)
-            removeItem(lastItem);
-        lastItem = draw(e->scenePos());
+    InstrumentsEnum tool = DataSingleton::Instance().instrument();
+    if(tool != NONE_INSTRUMENT) {
+        instrument->mouseMoveEvent(e, *this);
+        modified = true;
     }
 }
 
 void PaintScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *e) {
     QGraphicsScene::mouseReleaseEvent(e);
-    if (e->button() == Qt::LeftButton) {
-        draw(e->scenePos());
+    InstrumentsEnum tool = DataSingleton::Instance().instrument();
+    if(tool != NONE_INSTRUMENT) {
+        instrument->mouseMoveEvent(e, *this);
+        modified = true;
     }
 }
 
-QGraphicsItem* PaintScene::draw(const QPointF &endPointF) {
+void PaintScene::clearImage() {
+    qDeleteAll(items());
+    modified = true;
+    update();
+}
 
-    QGraphicsItem *item = nullptr;
-    if (lastPointF != endPointF) {
-        QPen pen(myPenColor, myPenWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-        switch (myMode) {
-        case Draw:
-            item = addLine(QLineF(lastPointF, endPointF), pen);
-            lastPointF = endPointF;
-            break;
-        case DrawRect:
-            item = addRect(QRectF(lastPointF, endPointF), pen);
-            break;
-        case DrawEllipse:
-            item = addEllipse(QRectF(lastPointF, endPointF), pen);
-            break;
-        }
-        modified = true;
+bool PaintScene::openImage(const QString &fileName) {
+    clearImage();
+    if (!image.load(fileName))
+        return false;
+    addPixmap(image);
+    setSceneRect(image.rect());
+    return true;
+}
+
+bool PaintScene::saveImage(const QString &fileName, const char *fileFormat) {
+    setSceneRect(itemsBoundingRect());
+    QSize size = sceneRect().size().toSize();
+    if (!size.width() || !size.height()) {
+        size.setWidth(startSceneRect.width());
+        size.setHeight(startSceneRect.height());
     }
-    return item;
+
+    QImage image(size, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+
+    QPainter painter(&image);
+    render(&painter);
+
+    setSceneRect(startSceneRect);
+    if (image.save(fileName, fileFormat)) {
+        modified = false;
+        return true;
+    } else {
+        return false;
+    }
 }

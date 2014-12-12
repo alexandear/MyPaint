@@ -3,33 +3,27 @@
 
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QVector>
 
-#include <QDebug>
-
+QT_BEGIN_NAMESPACE
 class QGraphicsItem;
+QT_END_NAMESPACE
+
+class AbstractInstrument;
 
 class PaintScene : public QGraphicsScene {
 
     Q_OBJECT
 
 public:
-    enum Mode { Draw, DrawRect, DrawEllipse };
-
     PaintScene(QWidget *parent = nullptr);
 
-    void setPenColor(const QColor &penColor);
-    void setPenWidth(int penWidth);
-
     bool isModified() const { return modified; }
-    QColor penColor() const { return myPenColor; }
-    int penWidth() const { return myPenWidth; }
-
-    Mode mode() { return myMode; }
+    bool openImage(const QString &fileName);
+    bool saveImage(const QString &fileName, const char *fileFormat);
 
 public slots:
-    void setMode(int mode) {
-        myMode = static_cast<Mode>(mode);
-    }
+    void clearImage();
 
 signals:
 
@@ -38,20 +32,12 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent * e);
     void mouseMoveEvent(QGraphicsSceneMouseEvent * e);
 
-
 private:
-    QGraphicsItem* draw(const QPointF &endPointF);
-
     bool modified;
-    bool scribbling;
-    int myPenWidth;
-    QImage image;
-    QColor myPenColor;
-    Mode myMode;
-
-    QPointF lastPointF;
-    QGraphicsItem *lastItem;
-    QImage paintAreaCopy;
+    AbstractInstrument *instrument;
+    QVector<AbstractInstrument *> instruments;
+    QPixmap image;
+    QRectF startSceneRect;
 
 };
 
