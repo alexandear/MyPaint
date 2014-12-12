@@ -37,4 +37,5 @@ HEADERS += \
 
 OTHER_FILES += \
     ProgramDescription.pdf \
-    ProgramDescription.tex
+    ProgramDescription.tex \
+    CQG_MyPaint_window.png
