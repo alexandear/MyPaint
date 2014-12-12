@@ -34,3 +34,7 @@ HEADERS += \
     lineinstrument.h \
     geometricshapesinstrument.h \
     instrumentswidget.h
+
+OTHER_FILES += \
+    ProgramDescription.pdf \
+    ProgramDescription.tex
